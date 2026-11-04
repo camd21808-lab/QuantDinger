@@ -26,6 +26,12 @@
 backend.env
 backend.env.bak.*
 backend_api_python/.env
+# haosanh local secrets and encrypted backups
+.keys/
+secrets/
+*.pem
+*.key
+*.gpg
 .codex-review/
 
 # ========================
