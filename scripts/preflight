@@ -1,0 +1,19 @@
+#!/bin/sh
+# Preflight wrapper: always runs the tooling venv, never the host Python.
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -P -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(dirname -- "$SCRIPT_DIR")
+VENV_PY="$SCRIPT_DIR/.venv/bin/python"
+ENTRYPOINT="$SCRIPT_DIR/preflight_check.py"
+
+if [ ! -x "$VENV_PY" ]; then
+    echo "preflight: tooling venv not found at $SCRIPT_DIR/.venv" >&2
+    echo "Create it with:" >&2
+    echo "  uv venv --python 3.12 scripts/.venv" >&2
+    echo "  uv pip install --python scripts/.venv/bin/python httpx python-dotenv pytest pytest-asyncio" >&2
+    exit 2
+fi
+
+cd -- "$REPO_ROOT"
+exec "$VENV_PY" "$ENTRYPOINT" "$@"
