@@ -63,9 +63,10 @@ def main(
         print(f"preflight: {error}", file=sys.stderr)
         return EXIT_CONFIG_ERROR
 
-    # CLI, registry and checks are added by EP-04 onwards.
-    del args
-    return 0
+    # Imported only after the guard: the CLI may load third-party modules.
+    from preflight_lib.cli import main as cli_main
+
+    return cli_main(args)
 
 
 if __name__ == "__main__":

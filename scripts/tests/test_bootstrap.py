@@ -47,12 +47,23 @@ def test_main_returns_2_without_traceback_when_guard_fails(capsys) -> None:
     assert "3.12" in captured.err
 
 
-def test_main_returns_0_when_guard_passes() -> None:
+def test_main_delegates_to_cli_when_guard_passes(monkeypatch) -> None:
     expected = Path("/repo/scripts/.venv")
+    seen: list[list[str]] = []
+
+    def fake_cli(argv: list[str]) -> int:
+        seen.append(argv)
+        return 0
+
+    monkeypatch.setattr("preflight_lib.cli.main", fake_cli)
     code = preflight_check.main(
-        [], version_info=(3, 12, 15), prefix=str(expected), expected_prefix=expected
+        ["--json"],
+        version_info=(3, 12, 15),
+        prefix=str(expected),
+        expected_prefix=expected,
     )
     assert code == 0
+    assert seen == [["--json"]]
 
 
 def _install_wrapper(root: Path) -> Path:
