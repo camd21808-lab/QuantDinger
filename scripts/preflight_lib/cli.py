@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .checks import build_registry
+from .checks.ollama import warm_up_ollama
 from .context import CheckContext
 from .env_loader import EnvLoadError, load_env_file
 from .registry import ProfileError, Registry, resolve_profile
@@ -88,6 +89,15 @@ def main(
             context = build_context(args.verbose)
         except EnvLoadError as exc:
             print(f"preflight: {exc}", file=sys.stderr)
+            return EXIT_CONFIG
+
+    if any("ollama" in spec.tags for spec in specs):
+        warmup_error = asyncio.run(warm_up_ollama(context))
+        if warmup_error is not None:
+            message = context.sanitizer.redact(warmup_error, fallback=True)
+            print(
+                f"preflight: Ollama warm-up failed: {message}", file=sys.stderr
+            )
             return EXIT_CONFIG
 
     outcomes = asyncio.run(run_specs(specs, context))
