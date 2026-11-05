@@ -6,6 +6,7 @@ from ..registry import Registry
 from .config_secret import CONFIG_SECRET_SPECS
 from .docker import DOCKER_SPECS
 from .hygiene import HYGIENE_SPECS
+from .network import NETWORK_SPECS
 from .ollama import OLLAMA_SPECS
 from .precedence import PRECEDENCE_SPECS
 
@@ -19,6 +20,7 @@ def build_registry() -> Registry:
         *DOCKER_SPECS,
         *HYGIENE_SPECS,
         *OLLAMA_SPECS,
+        *NETWORK_SPECS,
     ):
         registry.register(spec)
     return registry
