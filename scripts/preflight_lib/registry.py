@@ -25,6 +25,7 @@ class CheckSpec:
     requires: str = "none"
     tags: tuple[str, ...] = field(default_factory=tuple)
     config_failure: bool = False
+    hide_in_phase0_unless_verbose: bool = False
 
 
 class Registry:
@@ -45,13 +46,22 @@ class Registry:
         return len(self._specs)
 
 
-def resolve_profile(registry: Registry, profile: str) -> tuple[CheckSpec, ...]:
+def resolve_profile(
+    registry: Registry, profile: str, *, verbose: bool = False
+) -> tuple[CheckSpec, ...]:
     """Return the checks for *profile*.
 
     Phase 0 is the base profile; later phases are placeholders that currently
-    inherit every registered check.
+    inherit every registered check. Informational checks marked
+    ``hide_in_phase0_unless_verbose`` are omitted from phase0 output unless
+    ``--verbose`` is used; later phases always show them.
     """
     if profile not in PHASE_PROFILES:
         valid = ", ".join(PHASE_PROFILES)
         raise ProfileError(f"unknown profile '{profile}'; valid profiles: {valid}")
-    return registry.specs()
+    specs = registry.specs()
+    if profile == "phase0" and not verbose:
+        specs = tuple(
+            spec for spec in specs if not spec.hide_in_phase0_unless_verbose
+        )
+    return specs

@@ -71,7 +71,7 @@ def main(
         return EXIT_OK
 
     try:
-        specs = resolve_profile(active_registry, args.profile)
+        specs = resolve_profile(active_registry, args.profile, verbose=args.verbose)
     except ProfileError as exc:
         print(f"preflight: {exc}", file=sys.stderr)
         return EXIT_CONFIG
