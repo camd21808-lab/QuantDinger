@@ -184,6 +184,64 @@ def test_precedence_does_not_warn_when_interpolated_value_matches(tmp_path: Path
     assert result.status == Status.PASS
 
 
+def test_precedence_accepts_list_form_environment_and_string_mounts(
+    tmp_path: Path,
+) -> None:
+    config = {
+        "services": {
+            "backend": {
+                "volumes": ["/repo/.env:/app/.env:ro", "/tmp/logs:/app/logs"],
+                "environment": ["LOG_LEVEL=info"],
+            },
+            "celery-worker": {
+                "volumes": ["/repo/.env:/app/.env"],
+                "environment": [],
+            },
+        }
+    }
+    result = run(
+        check_config_precedence(ctx(tmp_path), compose_config=config, compose_text="")
+    )
+    assert result.status == Status.PASS
+
+
+def test_precedence_fails_without_services(tmp_path: Path) -> None:
+    result = run(
+        check_config_precedence(ctx(tmp_path), compose_config={}, compose_text="")
+    )
+    assert result.status == Status.FAIL
+    assert "services" in result.detail
+
+
+def test_precedence_fails_without_backend(tmp_path: Path) -> None:
+    config = {"services": {"celery-worker": {"volumes": bind_env(), "environment": {}}}}
+    result = run(
+        check_config_precedence(ctx(tmp_path), compose_config=config, compose_text="")
+    )
+    assert result.status == Status.FAIL
+    assert "backend" in result.detail
+
+
+def test_precedence_fails_without_any_worker(tmp_path: Path) -> None:
+    config = {"services": {"backend": {"volumes": bind_env(), "environment": {}}}}
+    result = run(
+        check_config_precedence(ctx(tmp_path), compose_config=config, compose_text="")
+    )
+    assert result.status == Status.FAIL
+    assert "worker" in result.detail
+
+
+def test_precedence_fails_when_compose_config_cannot_be_loaded(
+    tmp_path: Path,
+) -> None:
+    def runner(_args, _cwd, _timeout):
+        return CommandOutcome(1, "", "compose error")
+
+    result = run(check_config_precedence(ctx(tmp_path), command_runner=runner))
+    assert result.status == Status.FAIL
+    assert "compose config" in result.detail
+
+
 # --- docker checks --------------------------------------------------------
 
 

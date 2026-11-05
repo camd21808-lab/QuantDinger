@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import httpx
+import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -186,6 +187,88 @@ def test_binance_retry_after_below_cap_is_used(tmp_path: Path) -> None:
     result, delays = run_binance(handler)
     assert result.status == Status.PASS
     assert delays == [1.0]
+
+
+def test_connection_errors_are_retried_and_reported(tmp_path: Path) -> None:
+    calls = [0]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls[0] += 1
+        raise httpx.ConnectError("refused", request=request)
+
+    result = run(
+        check_binance_testnet(
+            ctx(tmp_path),
+            transport=mock(handler),
+            sleep_fn=sleeper()[1],
+            jitter_fn=lambda: 0.0,
+        )
+    )
+    assert result.status == Status.FAIL
+    assert calls[0] == 3
+    assert "ConnectError" in result.detail
+
+
+def test_invalid_json_is_not_retried(tmp_path: Path) -> None:
+    handler, calls = scripted([httpx.Response(200, text="not json")])
+    result = run(
+        check_binance_testnet(
+            ctx(tmp_path),
+            transport=mock(handler),
+            sleep_fn=sleeper()[1],
+            jitter_fn=lambda: 0.0,
+        )
+    )
+    assert result.status == Status.FAIL
+    assert calls[0] == 1
+    assert "JSON" in result.detail
+
+
+def test_invalid_retry_after_falls_back_to_normal_backoff(tmp_path: Path) -> None:
+    handler, _ = scripted(
+        [httpx.Response(429, headers={"Retry-After": "soon"}), ok({})]
+    )
+    result, delays = run_binance(handler)
+    assert result.status == Status.PASS
+    assert delays == [0.5]
+
+
+def test_http_date_retry_after_is_ignored(tmp_path: Path) -> None:
+    handler, _ = scripted(
+        [
+            httpx.Response(
+                429, headers={"Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT"}
+            ),
+            ok({}),
+        ]
+    )
+    result, delays = run_binance(handler)
+    assert result.status == Status.PASS
+    assert delays == [0.5]
+
+
+def test_negative_retry_after_is_clamped_to_zero(tmp_path: Path) -> None:
+    handler, _ = scripted(
+        [httpx.Response(429, headers={"Retry-After": "-5"}), ok({})]
+    )
+    result, delays = run_binance(handler)
+    assert result.status == Status.PASS
+    assert delays == [0.0]
+
+
+def test_jitter_is_added_to_the_backoff(tmp_path: Path) -> None:
+    handler, _ = scripted([httpx.Response(500), ok({})])
+    delays, sleep = sleeper()
+    result = run(
+        check_binance_testnet(
+            ctx(tmp_path),
+            transport=mock(handler),
+            sleep_fn=sleep,
+            jitter_fn=lambda: 1.0,
+        )
+    )
+    assert result.status == Status.PASS
+    assert delays[0] == pytest.approx(0.6)
 
 
 # --- jupiter --------------------------------------------------------------

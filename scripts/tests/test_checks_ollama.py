@@ -160,6 +160,15 @@ def test_service_reports_timeout(tmp_path: Path) -> None:
     assert "timeout" in result.detail
 
 
+def test_service_reports_invalid_json(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="not json")
+
+    result = run(check_ollama_service(ctx(tmp_path), transport=transport(handler)))
+    assert result.status == Status.FAIL
+    assert "JSON" in result.detail
+
+
 # --- ollama_model ---------------------------------------------------------
 
 
@@ -199,6 +208,17 @@ def test_model_fails_on_non_200(tmp_path: Path) -> None:
     assert result.status == Status.FAIL
 
 
+def test_model_fails_when_models_is_not_a_list(tmp_path: Path) -> None:
+    result = run(
+        check_ollama_model(
+            ctx(tmp_path),
+            transport=transport(handler_for({("GET", "/api/tags"): {"models": "x"}})),
+        )
+    )
+    assert result.status == Status.FAIL
+    assert "models" in result.detail
+
+
 # --- ollama_smoke ---------------------------------------------------------
 
 
@@ -235,6 +255,24 @@ def test_smoke_does_not_retry(tmp_path: Path) -> None:
     assert result.status == Status.FAIL
     assert calls[0] == 1
     assert "timeout" in result.detail
+
+
+def test_smoke_fails_on_invalid_json(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="not json")
+
+    result = run(check_ollama_smoke(ctx(tmp_path), transport=transport(handler)))
+    assert result.status == Status.FAIL
+    assert "JSON" in result.detail
+
+
+def test_warmup_fails_on_invalid_json(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="not json")
+
+    error = run(warm_up_ollama(ctx(tmp_path), transport=transport(handler)))
+    assert error is not None
+    assert "JSON" in error
 
 
 # --- registry metadata ----------------------------------------------------

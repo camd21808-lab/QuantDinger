@@ -114,3 +114,40 @@ def test_sanitizer_is_idempotent() -> None:
     sanitizer = Sanitizer([CANARY])
     once = sanitizer.redact(CANARY)
     assert sanitizer.redact(once) == once
+
+
+def test_sanitizer_ignores_none_empty_and_short_values() -> None:
+    sanitizer = Sanitizer()
+    sanitizer.add(None)
+    sanitizer.add("")
+    sanitizer.add("1234567")  # one short of MIN_SECRET_LENGTH
+    assert sanitizer.redact("1234567") == "1234567"
+
+
+def test_sanitizer_accepts_a_value_of_exactly_minimum_length() -> None:
+    sanitizer = Sanitizer(["12345678"])
+    assert sanitizer.redact("x12345678x") == f"x{REDACTED}x"
+
+
+def test_sanitizer_does_not_duplicate_values() -> None:
+    sanitizer = Sanitizer([CANARY, CANARY])
+    sanitizer.add(CANARY)
+    assert sanitizer.redact(CANARY) == REDACTED
+
+
+def test_sanitizer_converts_non_string_input() -> None:
+    sanitizer = Sanitizer([CANARY])
+    assert sanitizer.redact(1234) == "1234"
+    assert sanitizer.redact(None) == "None"
+
+
+def test_sanitizer_fallback_leaves_short_tokens_alone() -> None:
+    sanitizer = Sanitizer()
+    text = "path=/tmp/x token=short"
+    assert sanitizer.redact(text, fallback=True) == text
+
+
+def test_sanitizer_fallback_does_not_double_redact_the_marker() -> None:
+    sanitizer = Sanitizer([CANARY])
+    once = sanitizer.redact(CANARY, fallback=True)
+    assert sanitizer.redact(once, fallback=True) == once

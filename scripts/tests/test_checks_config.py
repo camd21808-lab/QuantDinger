@@ -210,6 +210,14 @@ def test_durable_secrets_rejects_default_values_without_leaking(tmp_path: Path) 
     assert "changeme" not in result.detail
 
 
+def test_durable_secrets_rejects_short_encryption_key(tmp_path: Path) -> None:
+    env = dict(GOOD_ENV, CREDENTIAL_ENCRYPTION_KEY="too-short")
+    result = run(check_durable_secrets(ctx(tmp_path, env)))
+    assert result.status == Status.FAIL
+    assert "CREDENTIAL_ENCRYPTION_KEY" in result.detail
+    assert "too-short" not in result.detail
+
+
 # --- trading_safety_flags -------------------------------------------------
 
 
@@ -244,6 +252,13 @@ def test_llm_config_accepts_local_ollama(tmp_path: Path) -> None:
 def test_llm_config_rejects_remote_host(tmp_path: Path) -> None:
     env = dict(GOOD_ENV, CUSTOM_API_URL="http://example.com:11434/v1")
     assert run(check_llm_config(ctx(tmp_path, env))).status == Status.FAIL
+
+
+def test_llm_config_rejects_invalid_url(tmp_path: Path) -> None:
+    env = dict(GOOD_ENV, CUSTOM_API_URL="not a url")
+    result = run(check_llm_config(ctx(tmp_path, env)))
+    assert result.status == Status.FAIL
+    assert "valid URL" in result.detail
 
 
 def test_llm_config_rejects_wrong_model_and_provider(tmp_path: Path) -> None:

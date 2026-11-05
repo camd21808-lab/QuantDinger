@@ -147,6 +147,36 @@ def test_disk_free_ignores_unknown_docker_root(tmp_path: Path) -> None:
     assert "docker" not in result.detail
 
 
+def test_disk_free_fails_when_repo_usage_raises(tmp_path: Path) -> None:
+    def boom(_path):
+        raise OSError("no such path")
+
+    result = run(check_disk_free(ctx(tmp_path), disk_usage_fn=boom, docker_root=None))
+    assert result.status == Status.FAIL
+    assert "OSError" in result.detail
+
+
+def test_disk_free_reports_unreadable_distinct_docker_root(tmp_path: Path) -> None:
+    def disk_usage(path):
+        if Path(path) == tmp_path:
+            return usage(50 * GIB)
+        raise OSError("unreadable")
+
+    def device_fn(path: Path) -> int:
+        return 1 if Path(path) == tmp_path else 2
+
+    result = run(
+        check_disk_free(
+            ctx(tmp_path),
+            disk_usage_fn=disk_usage,
+            docker_root=Path("/var/lib/docker"),
+            device_fn=device_fn,
+        )
+    )
+    assert result.status == Status.PASS
+    assert "usage unavailable" in result.detail
+
+
 # --- docker_disk_pressure -------------------------------------------------
 
 
@@ -210,6 +240,16 @@ def test_docker_disk_pressure_warns_on_unparseable_output(tmp_path: Path) -> Non
         )
     )
     assert result.status == Status.WARN
+
+
+def test_docker_disk_pressure_warns_on_zero_total(tmp_path: Path) -> None:
+    result = run(
+        check_docker_disk_pressure(
+            ctx(tmp_path), command_runner=command(0, df_rows("1GB")), total_bytes=0
+        )
+    )
+    assert result.status == Status.WARN
+    assert "unknown" in result.detail
 
 
 @pytest.mark.parametrize(
@@ -413,6 +453,15 @@ def test_env_gitignored_reports_git_failure(tmp_path: Path) -> None:
     )
     assert result.status == Status.FAIL
     assert "git" in result.detail.lower()
+
+
+def test_env_gitignored_reports_missing_git_binary(tmp_path: Path) -> None:
+    def runner(_args, _cwd, _timeout):
+        return None
+
+    result = run(check_env_gitignored(ctx(tmp_path), command_runner=runner))
+    assert result.status == Status.FAIL
+    assert "executed" in result.detail
 
 
 # --- registry metadata, order and profile visibility ---------------------
