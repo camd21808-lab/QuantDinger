@@ -4,9 +4,10 @@
 - **Branch:** `setup/environment-provisioning`
 - **HEAD tại thời điểm tạo:** `2d663f7`
 - **Phạm vi:** Phase 0 core-only (Option D). Chưa chạy full stack.
-- **Trạng thái:** Step 7 (implementation, EP-01 → EP-15) hoàn tất. **Chưa chạy Step 8.**
+- **Trạng thái:** Step 7 (EP-01 → EP-15) và EP-16 (preflight Step 8) hoàn tất.
+  EP-17 closeout là bước cuối.
 
-> Gate: dừng sau EP-15 để chờ duyệt trước Step 8 (`EP-16 → EP-17`).
+> Gate: Phase 0 closeout xong sẽ chờ duyệt sang Phase 1.
 
 ## 1. Mốc commit
 
@@ -104,39 +105,38 @@ scripts/.venv/bin/python -m pytest scripts/tests -q
 - Fixture chỉ dùng giá trị giả `FAKE_*`; không đọc/ghi secret thật.
 - Integration có chạy `git config` / `git check-ignore` thật nhưng chỉ read-only trên repo.
 
-## 5. Preflight dry-run — quan sát ngày 2026-11-05
+## 5. Preflight — Step 8 (EP-16), 2026-11-05
 
-Chạy `scripts/preflight --profile phase0` (chưa phải báo cáo Step 8 chính thức):
+Lệnh đã chạy:
+
+```bash
+scripts/preflight --profile phase0
+scripts/preflight --profile phase0 --json
+```
+
+Bằng chứng đã lưu:
+
+- `docs/status/artifacts/preflight-phase0-2026-11-05.txt`
+- `docs/status/artifacts/preflight-phase0-2026-11-05.json`
 
 | Kết quả | Số lượng |
 |---|---|
-| PASS | 18 |
+| PASS | 20 |
 | WARN | 1 |
-| FAIL critical | 2 |
+| FAIL critical | 0 |
 | UNVERIFIED | 0 |
-| Exit code | **1** |
+| Exit code | **0** |
 
-Check FAIL:
-
-- `env_required_keys`: `CUSTOM_API_URL`, `CUSTOM_MODEL` đang rỗng trong `.env`.
-- `llm_config`: `LLM_PROVIDER` không phải `custom`; `CUSTOM_API_URL` không phải URL hợp lệ; `CUSTOM_MODEL` không phải `qwen2.5:1.5b`.
-
-Check WARN (không đóng góp exit code):
-
-- `config_precedence`: shell override trên `DB_POOL_MAX` / `DB_POOL_MIN` (interpolated); không phải safety key.
-
-**Nguyên nhân:** `.env` hiện chưa được cấu hình cho Ollama cục bộ. Theo ràng buộc của phiên làm việc, `.env` **không bị sửa** trong Step 7.
-
-**Hệ quả:** tiêu chí Step 8 “exit 0, không critical FAIL/UNVERIFIED” **chưa đạt** với trạng thái `.env` hiện tại. Cần owner quyết định trước Step 8, ví dụ cấu hình các key không-secret sau trong `.env`:
-
-```dotenv
-LLM_PROVIDER=custom
-CUSTOM_API_URL=http://127.0.0.1:11434/v1
-CUSTOM_MODEL=qwen2.5:1.5b
-CUSTOM_API_KEY=
-```
-
-Không có giá trị secret nào được ghi vào tài liệu này.
+- `phase0` mặc định hiển thị 21 check; `git_identity_temporary` bị ẩn theo thiết kế
+  (chỉ hiện với `--verbose`). Registry vẫn đủ **22 check**.
+- WARN duy nhất: `config_precedence` báo shell override trên `DB_POOL_MAX` / `DB_POOL_MIN`
+  (interpolated). Đây không phải safety key và **không** đóng góp exit code.
+- JSON đã kiểm tra: `schema_version=1`, `exit_phase=run`, `exit_code=0`,
+  không có trường `value`, không có critical FAIL/UNVERIFIED.
+- Trước thay đổi ở mục 2a, dry-run từng trả exit 1 với 2 critical FAIL
+  (`env_required_keys`, `llm_config`). Sau khi cấu hình đúng 4 key được duyệt,
+  cả hai check đều PASS.
+- Không có giá trị secret nào trong báo cáo human/JSON hay tài liệu này.
 
 ## 6. Trạng thái trung gian đã biết
 
@@ -146,9 +146,9 @@ Không có giá trị secret nào được ghi vào tài liệu này.
 
 ## 7. Bước tiếp theo
 
-1. Owner xử lý blocker `.env` ở mục 5 (hoặc chấp thuận một cách tiếp cận khác).
-2. Step 8 = `EP-16` (chạy preflight, lưu human + JSON report) → `EP-17` (closeout).
-3. Sau closeout, chờ duyệt sang Phase 1.
+1. `EP-17` closeout: xác nhận repo sạch, `.env` không bị track, flags an toàn vẫn `false`,
+   commit cuối và cập nhật trạng thái.
+2. Sau closeout, chờ duyệt sang Phase 1.
 
 Các việc Phase 1 đã biết (chưa làm):
 

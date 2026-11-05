@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "profile": "phase0",
+  "generated_at": "2026-11-05T14:19:37.954553+00:00",
+  "environment": {
+    "tooling_python": "3.12.15",
+    "host_python": "3.14.4"
+  },
+  "checks": [
+    {
+      "id": "tooling_python",
+      "title": "Tooling venv on CPython 3.12",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "CPython 3.12.15",
+      "duration_ms": 0,
+      "tags": [
+        "local",
+        "tooling"
+      ]
+    },
+    {
+      "id": "host_python_info",
+      "title": "Host Python (informational)",
+      "severity": "warning",
+      "status": "PASS",
+      "detail": "Python 3.14.4; informational only, tooling uses scripts/.venv",
+      "duration_ms": 2,
+      "tags": [
+        "local",
+        "tooling"
+      ]
+    },
+    {
+      "id": "env_file",
+      "title": ".env exists and is private",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": ".env mode 0600",
+      "duration_ms": 0,
+      "tags": [
+        "local",
+        "secret"
+      ]
+    },
+    {
+      "id": "env_required_keys",
+      "title": "Required keys present",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "8 required keys present",
+      "duration_ms": 0,
+      "tags": [
+        "local",
+        "secret"
+      ]
+    },
+    {
+      "id": "durable_secrets",
+      "title": "Durable secrets strong and non-default",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "SECRET_KEY=64, CREDENTIAL_ENCRYPTION_KEY=64, POSTGRES_PASSWORD=36",
+      "duration_ms": 0,
+      "tags": [
+        "local",
+        "secret"
+      ]
+    },
+    {
+      "id": "trading_safety_flags",
+      "title": "Live trading and JEV disabled",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "LIVE_TRADING_ENABLED and JEV_ENABLED are disabled",
+      "duration_ms": 0,
+      "tags": [
+        "local"
+      ]
+    },
+    {
+      "id": "llm_config",
+      "title": "LLM points to local Ollama",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "provider=custom host=***REDACTED***:11434 path=/v1 model=***REDACTED***",
+      "duration_ms": 0,
+      "tags": [
+        "local"
+      ]
+    },
+    {
+      "id": "config_precedence",
+      "title": "Mounted .env model verified; safety keys not overridden",
+      "severity": "critical",
+      "status": "WARN",
+      "detail": "mounted .env model verified; 8 safety keys not overridden via environment: shell override on DB_POOL_MAX (interpolated); container uses shell value, not .env. Not safety-critical but verify auth/connection shell override on DB_POOL_MIN (interpolated); container uses shell value, not .env. Not safety-critical but verify auth/connection",
+      "duration_ms": 136,
+      "tags": [
+        "local",
+        "docker"
+      ]
+    },
+    {
+      "id": "docker_compose_plugin",
+      "title": "Docker Compose v2 plugin available",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "Docker Compose version 2.40.3+ds1-0ubuntu1",
+      "duration_ms": 64,
+      "tags": [
+        "local",
+        "docker"
+      ]
+    },
+    {
+      "id": "docker_compose_config",
+      "title": "Compose file and .env interpolation valid",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "docker compose config valid",
+      "duration_ms": 117,
+      "tags": [
+        "local",
+        "docker"
+      ]
+    },
+    {
+      "id": "docker_daemon",
+      "title": "Docker daemon reachable",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "docker 29.1.3",
+      "duration_ms": 51,
+      "tags": [
+        "local",
+        "docker"
+      ]
+    },
+    {
+      "id": "disk_free",
+      "title": ">=20 GiB free for repo and Docker root",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "repo free=28.28 GiB",
+      "duration_ms": 48,
+      "tags": [
+        "local",
+        "disk"
+      ]
+    },
+    {
+      "id": "docker_disk_pressure",
+      "title": "Docker disk pressure (informational)",
+      "severity": "warning",
+      "status": "PASS",
+      "detail": "docker uses 9.18 GiB = 10.9% of 84.21 GiB",
+      "duration_ms": 243,
+      "tags": [
+        "local",
+        "disk",
+        "docker"
+      ]
+    },
+    {
+      "id": "git_identity",
+      "title": "Local git identity present",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "user.name and user.email set",
+      "duration_ms": 5,
+      "tags": [
+        "local",
+        "git"
+      ]
+    },
+    {
+      "id": "env_gitignored",
+      "title": "Secret paths ignored and untracked",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "7 secret paths ignored and untracked",
+      "duration_ms": 34,
+      "tags": [
+        "local",
+        "git",
+        "secret"
+      ]
+    },
+    {
+      "id": "ollama_service",
+      "title": "Ollama responds on 127.0.0.1:11434",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "ollama 0.40.14",
+      "duration_ms": 9,
+      "tags": [
+        "local",
+        "ollama"
+      ]
+    },
+    {
+      "id": "ollama_model",
+      "title": "Model qwen2.5:1.5b present",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "model ***REDACTED*** present",
+      "duration_ms": 9,
+      "tags": [
+        "local",
+        "ollama"
+      ]
+    },
+    {
+      "id": "ollama_smoke",
+      "title": "Model generates one token after warm-up",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "model generated 1 token",
+      "duration_ms": 85,
+      "tags": [
+        "local",
+        "ollama"
+      ]
+    },
+    {
+      "id": "binance_testnet",
+      "title": "Binance spot testnet reachable",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "binance testnet reachable",
+      "duration_ms": 412,
+      "tags": [
+        "network"
+      ]
+    },
+    {
+      "id": "jupiter_lite",
+      "title": "Jupiter Lite price API reachable",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "jupiter lite reachable; So11111111111111111111111111111111111111112 present",
+      "duration_ms": 613,
+      "tags": [
+        "network"
+      ]
+    },
+    {
+      "id": "dexscreener",
+      "title": "DexScreener API reachable",
+      "severity": "critical",
+      "status": "PASS",
+      "detail": "dexscreener reachable",
+      "duration_ms": 508,
+      "tags": [
+        "network"
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 20,
+    "fail": 0,
+    "warn": 1,
+    "skip": 0,
+    "unverified": 0,
+    "critical_fail": 0,
+    "critical_unverified": 0
+  },
+  "exit_code": 0,
+  "exit_phase": "run"
+}
