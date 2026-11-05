@@ -63,7 +63,7 @@ async def check_tooling_python(
     return CheckResult(Status.PASS, f"CPython {version[0]}.{version[1]}.{version[2]}")
 
 
-def _read_host_python_version() -> str | None:
+def read_host_python_version() -> str | None:
     try:
         completed = subprocess.run(
             ["python3", "--version"],
@@ -83,7 +83,7 @@ async def check_host_python_info(
     *,
     version_text: str | None | object = _MISSING,
 ) -> CheckResult:
-    text = _read_host_python_version() if version_text is _MISSING else version_text
+    text = read_host_python_version() if version_text is _MISSING else version_text
     if not text:
         return CheckResult(Status.WARN, "python3 not found on PATH (informational only)")
     return CheckResult(

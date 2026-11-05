@@ -8,7 +8,7 @@ VENV_PY="$SCRIPT_DIR/.venv/bin/python"
 ENTRYPOINT="$SCRIPT_DIR/preflight_check.py"
 
 if [ ! -x "$VENV_PY" ]; then
-    echo "preflight: tooling venv not found at $SCRIPT_DIR/.venv" >&2
+    echo "CONFIG ERROR: tooling venv not found at $SCRIPT_DIR/.venv" >&2
     echo "Create it with:" >&2
     echo "  uv venv --python 3.12 scripts/.venv" >&2
     echo "  uv pip install --python scripts/.venv/bin/python httpx python-dotenv pytest pytest-asyncio" >&2

@@ -26,6 +26,16 @@ def effective_status(spec: CheckSpec, result: CheckResult) -> Status:
     return result.status
 
 
+def classify_exit_phase(outcomes: Sequence[CheckOutcome], exit_code: int) -> str:
+    """Distinguish bootstrap config errors from config-check failures at run time."""
+    if exit_code != 2:
+        return "run"
+    for spec, result in outcomes:
+        if spec.config_failure and result.status == Status.FAIL:
+            return "run"
+    return "bootstrap"
+
+
 def classify_exit_code(outcomes: Sequence[CheckOutcome]) -> int:
     """Return 2 for config-class failures, 1 for critical problems, else 0."""
     for spec, result in outcomes:

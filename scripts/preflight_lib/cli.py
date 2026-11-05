@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .checks import build_registry
+from .checks.config_secret import read_host_python_version
 from .checks.ollama import warm_up_ollama
 from .context import CheckContext
 from .env_loader import EnvLoadError, load_env_file
@@ -36,6 +37,50 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def collect_environment() -> dict[str, str]:
+    """Return report metadata for the two interpreters involved."""
+    info = sys.version_info
+    host_text = read_host_python_version() or ""
+    host = host_text.removeprefix("Python ").strip() or "unknown"
+    return {
+        "tooling_python": f"{info.major}.{info.minor}.{info.micro}",
+        "host_python": host,
+    }
+
+
+def _bootstrap_error(
+    message: str,
+    *,
+    profile: str,
+    json_output: bool,
+    context: CheckContext | None,
+) -> int:
+    """Report a bootstrap/config error with the agreed prefix and exit 2."""
+    sanitizer = context.sanitizer if context is not None else Sanitizer()
+    safe = sanitizer.redact(message, fallback=True)
+    print(f"CONFIG ERROR: {safe}", file=sys.stderr)
+    if json_output:
+        sys.stdout.write(
+            render_json(
+                profile,
+                [],
+                EXIT_CONFIG,
+                environment=collect_environment(),
+                error=safe,
+            )
+        )
+    return EXIT_CONFIG
+
+
+def _guess_profile(raw_args: list[str]) -> str:
+    for index, value in enumerate(raw_args):
+        if value == "--profile" and index + 1 < len(raw_args):
+            return raw_args[index + 1]
+        if value.startswith("--profile="):
+            return value.split("=", 1)[1]
+    return "unknown"
+
+
 def build_context(verbose: bool) -> CheckContext:
     """Load .env into memory with the sanitizer in place. Never mutates os.environ."""
     repo_root = Path(__file__).resolve().parents[2]
@@ -59,11 +104,20 @@ def main(
     registry: Registry | None = None,
     context: CheckContext | None = None,
 ) -> int:
+    raw_args = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     try:
-        args = parser.parse_args(argv)
+        args = parser.parse_args(raw_args)
     except SystemExit as exc:  # argparse already printed usage
-        return int(exc.code) if exc.code is not None else EXIT_CONFIG
+        code = int(exc.code) if exc.code is not None else EXIT_CONFIG
+        if code != EXIT_CONFIG:
+            return code
+        return _bootstrap_error(
+            "invalid command-line arguments",
+            profile=_guess_profile(raw_args),
+            json_output="--json" in raw_args,
+            context=context,
+        )
 
     active_registry = registry if registry is not None else build_registry()
 
@@ -74,37 +128,50 @@ def main(
     try:
         specs = resolve_profile(active_registry, args.profile, verbose=args.verbose)
     except ProfileError as exc:
-        print(f"preflight: {exc}", file=sys.stderr)
-        return EXIT_CONFIG
+        return _bootstrap_error(
+            str(exc),
+            profile=args.profile,
+            json_output=args.json_output,
+            context=context,
+        )
 
     if not specs:
-        print(
-            f"preflight: check registry is empty for profile '{args.profile}'",
-            file=sys.stderr,
+        return _bootstrap_error(
+            f"check registry is empty for profile '{args.profile}'",
+            profile=args.profile,
+            json_output=args.json_output,
+            context=context,
         )
-        return EXIT_CONFIG
 
     if context is None:
         try:
             context = build_context(args.verbose)
         except EnvLoadError as exc:
-            print(f"preflight: {exc}", file=sys.stderr)
-            return EXIT_CONFIG
+            return _bootstrap_error(
+                str(exc),
+                profile=args.profile,
+                json_output=args.json_output,
+                context=None,
+            )
 
     if any("ollama" in spec.tags for spec in specs):
         warmup_error = asyncio.run(warm_up_ollama(context))
         if warmup_error is not None:
-            message = context.sanitizer.redact(warmup_error, fallback=True)
-            print(
-                f"preflight: Ollama warm-up failed: {message}", file=sys.stderr
+            return _bootstrap_error(
+                f"Ollama warm-up failed: {warmup_error}",
+                profile=args.profile,
+                json_output=args.json_output,
+                context=context,
             )
-            return EXIT_CONFIG
 
     outcomes = asyncio.run(run_specs(specs, context))
     exit_code = classify_exit_code(outcomes)
+    environment = collect_environment()
 
     if args.json_output:
-        sys.stdout.write(render_json(args.profile, outcomes, exit_code))
+        sys.stdout.write(
+            render_json(args.profile, outcomes, exit_code, environment=environment)
+        )
     else:
         use_color = (
             sys.stdout.isatty()

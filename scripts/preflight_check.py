@@ -30,7 +30,7 @@ def main(
 
     error = interpreter_error(tuple(version), current_prefix, expected)
     if error is not None:
-        print(f"preflight: {error}", file=sys.stderr)
+        print(f"CONFIG ERROR: {error}", file=sys.stderr)
         return EXIT_CONFIG_ERROR
 
     # Imported only after the guard: the CLI may load third-party modules.
