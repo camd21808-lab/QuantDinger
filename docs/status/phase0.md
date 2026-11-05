@@ -4,10 +4,9 @@
 - **Branch:** `setup/environment-provisioning`
 - **HEAD tại thời điểm tạo:** `2d663f7`
 - **Phạm vi:** Phase 0 core-only (Option D). Chưa chạy full stack.
-- **Trạng thái:** Step 7 (EP-01 → EP-15) và EP-16 (preflight Step 8) hoàn tất.
-  EP-17 closeout là bước cuối.
+- **Trạng thái:** Phase 0 closeout hoàn tất (EP-01 → EP-17).
 
-> Gate: Phase 0 closeout xong sẽ chờ duyệt sang Phase 1.
+> Gate: Phase 0 đã đóng; chờ owner duyệt sang Phase 1.
 
 ## 1. Mốc commit
 
@@ -30,9 +29,12 @@
 | `adf3d96` | Mở rộng unit coverage |
 | `1de6c4b` | Integration coverage |
 | `2d663f7` | E2E opt-in (3 test) |
-| _(commit này)_ | `docs(status)`: ghi nhận trạng thái Phase 0 |
+| `2820cd0` | `docs(status)`: ghi nhận trạng thái Phase 0 |
+| `2810cc8` | `docs(status)`: ghi nhận thay đổi LLM config được duyệt |
+| `550ce4f` | `docs(status)`: ghi nhận kết quả preflight Phase 0 |
+| _(commit này)_ | `docs(status)`: closeout Phase 0 |
 
-## 2. Deliverables Step 7
+## 2. Deliverables (EP-01 → EP-17)
 
 | EP | Nội dung | Commit | Trạng thái |
 |---|---|---|---|
@@ -49,7 +51,9 @@
 | EP-12 | Unit coverage mở rộng | `adf3d96` | ✅ |
 | EP-13 | Integration tests | `1de6c4b` | ✅ |
 | EP-14 | E2E opt-in (3 test) | `2d663f7` | ✅ |
-| EP-15 | Status doc | commit này | ✅ |
+| EP-15 | Status doc | `2820cd0` | ✅ |
+| EP-16 | Chạy preflight + lưu báo cáo | `550ce4f` | ✅ |
+| EP-17 | Closeout Phase 0 | commit này | ✅ |
 
 ## 2a. LLM config change — 2026-11-05 21:18 (+07)
 
@@ -144,11 +148,21 @@ Bằng chứng đã lưu:
   `check registry is empty for profile 'phase0'`. Đây là trạng thái trung gian hợp lệ
   trong lúc registry chưa được nạp đủ 22 check, không phải lỗi.
 
-## 7. Bước tiếp theo
+## 7. Closeout (EP-17) — 2026-11-05
 
-1. `EP-17` closeout: xác nhận repo sạch, `.env` không bị track, flags an toàn vẫn `false`,
-   commit cuối và cập nhật trạng thái.
-2. Sau closeout, chờ duyệt sang Phase 1.
+- **Repo:** working tree sạch sau commit closeout.
+- **`.env`:** không bị git track (đã nằm trong `.gitignore`); mode `600`, owner `rew:rew`.
+- **Safety flags:** `LIVE_TRADING_ENABLED=false`, `JEV_ENABLED=false` (giữ nguyên).
+- **Backup `.env`:** `/home/rew/backups/haosanh/env-pre-llm-config-20261105-211848.gpg`,
+  mode `600`, owner `rew:rew`.
+- **Test cuối:** `241 passed, 3 skipped`.
+- **Preflight cuối:** exit `0`, 20 PASS / 1 WARN / 0 FAIL / 0 UNVERIFIED.
+- **Commit EP-16:** `550ce4f`; **commit closeout:** commit này.
+- Không có giá trị secret nào được ghi lại.
+
+## 8. Bước tiếp theo
+
+Phase 0 đã hoàn tất; chờ owner duyệt sang Phase 1.
 
 Các việc Phase 1 đã biết (chưa làm):
 
