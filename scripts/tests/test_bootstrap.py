@@ -18,6 +18,12 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 import preflight_check  # noqa: E402  (path setup must happen first)
 
 
+def test_expected_venv_prefix_points_at_scripts_venv() -> None:
+    expected = REPO_ROOT / "scripts" / ".venv"
+    assert preflight_check.expected_venv_prefix(REPO_ROOT) == expected
+    assert preflight_check.expected_venv_prefix() == expected
+
+
 def test_interpreter_error_accepts_expected_venv() -> None:
     expected = Path("/repo/scripts/.venv")
     assert preflight_check.interpreter_error((3, 12, 15), str(expected), expected) is None
