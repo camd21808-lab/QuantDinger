@@ -50,6 +50,22 @@
 | EP-14 | E2E opt-in (3 test) | `2d663f7` | ✅ |
 | EP-15 | Status doc | commit này | ✅ |
 
+## 2a. LLM config change — 2026-11-05 21:18 (+07)
+
+- **Pre-change:** `LLM_PROVIDER=openrouter` (không dùng; các key `CUSTOM_*` rỗng).
+- **Post-change:** `LLM_PROVIDER=custom`, `CUSTOM_API_URL=http://127.0.0.1:11434/v1`,
+  `CUSTOM_MODEL=qwen2.5:1.5b`, `CUSTOM_API_KEY=` (rỗng).
+- **Lý do:** chuyển sang Ollama cục bộ theo kế hoạch Phase 0.
+- **Backup:** `/home/rew/backups/haosanh/env-pre-llm-config-20261105-211848.gpg`
+  (GPG AES256, mode 600, owner `rew:rew`; giải mã diff khớp byte-for-byte trước khi sửa).
+- **Diff:** đúng 3 dòng nội dung thay đổi (`LLM_PROVIDER`, `CUSTOM_API_URL`,
+  `CUSTOM_MODEL`). `CUSTOM_API_KEY` đã tồn tại và giữ nguyên rỗng nên không đổi byte.
+  Không có dòng nào khác thay đổi; không thêm/xóa key, không đổi thứ tự/comment.
+- **Permission:** `600 rew:rew` (không đổi).
+- **Verified:** `docker compose config --quiet` → OK; Ollama
+  `POST /v1/chat/completions` → HTTP 200, `choices` có mặt.
+- Không ghi giá trị secret hay passphrase.
+
 ## 3. Registry — 22 check theo thứ tự
 
 1. `tooling_python`
