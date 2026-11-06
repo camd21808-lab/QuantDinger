@@ -1,0 +1,10 @@
+[Unit]
+Description=Forward Docker-side Ollama bridge to 127.0.0.1:11434
+Requires=ollama-bridge.socket
+After=ollama-bridge.socket ollama.service
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:11434
+PrivateTmp=yes
+Restart=always
+RestartSec=2

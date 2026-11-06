@@ -8,6 +8,8 @@
 
 > Gate: Phase 0 đã đóng; chờ owner duyệt sang Phase 1.
 
+> **Lưu ý hash:** các hash trong tài liệu này là hash **trước** đợt rewrite author ngày 2026-11-06. Bảng đối chiếu đầy đủ ở §9.1.
+
 ## 1. Mốc commit
 
 | Commit | Nội dung |
@@ -169,3 +171,101 @@ Các việc Phase 1 đã biết (chưa làm):
 - Tạo GitHub fork và đặt identity thật; rewrite author các commit Phase 0.
 - Chốt mô hình networking Ollama ↔ Docker trong Phase 1 TDDoc.
 - Rebuild tài liệu tham chiếu Kronos từ đầu cho Phase 2.
+
+## 9. Phase 1 pre-conditions — 2026-11-06
+
+### 9.1 Git identity và rewrite lịch sử
+
+- Identity chốt: `j pham <camd21808@gmail.com>` (`git config --local`).
+- Phạm vi rewrite: **21 commit Phase 0**; 759 commit upstream giữ nguyên tác giả gốc.
+- Lệnh: `git rebase upstream/main --exec 'git commit --amend --no-edit --author="j pham <camd21808@gmail.com>"'`.
+- Verify:
+  - 21/21 commit có author + committer `j pham <camd21808@gmail.com>`.
+  - Tree hash trước/sau giống nhau: `7f958e7b0fd9d2bd6df9a3339874b7aeafcac3be`.
+  - Không còn commit `haosanh-agent` trong range.
+  - `upstream/main` không đổi: `dd90b83b0d2323efb3869049052dcdffeb2b6bde`; 41 tác giả gốc giữ nguyên.
+- Backup trước rewrite (mode `600`, owner `rew:rew`):
+  - `repo-pre-rewrite-20261105-214014.bundle` — 101 refs, `git bundle verify` OK.
+  - `gitdir-pre-rewrite-20261105-214014.tar.gz`
+  - `MANIFEST-20261105-214014.txt` — sha256 của cả hai.
+
+Đối chiếu hash trước → sau rewrite:
+
+| Trước | Sau | Nội dung |
+|---|---|---|
+| `815063c` | `e91194c` | `docs(status)`: close out phase 0 |
+| `550ce4f` | `f986390` | `docs(status)`: record phase 0 preflight results |
+| `2810cc8` | `0ea072c` | `docs(status)`: record approved llm config change |
+| `2820cd0` | `3ec1114` | `docs(status)`: record phase 0 implementation status |
+| `2d663f7` | `12f8f90` | `test(preflight)`: add opt-in e2e coverage |
+| `1de6c4b` | `ab844e2` | `test(preflight)`: add integration coverage for the check pipeline |
+| `adf3d96` | `e0da2aa` | `test(preflight)`: expand unit coverage for checks and runner |
+| `d3eaecf` | `8fdb00f` | `feat(preflight)`: add output formatters and exit phase |
+| `f092597` | `7abf340` | `feat(preflight)`: add retrying network checks |
+| `76fc50b` | `a860370` | `feat(preflight)`: add ollama warm-up and checks |
+| `ff3d9d2` | `abeacc6` | `feat(preflight)`: add disk, git and hygiene checks |
+| `b47bd8a` | `be72c6f` | `feat(preflight)`: add precedence and docker checks |
+| `186ebda` | `20687fa` | `feat(preflight)`: add config/secret checks |
+| `f8ee635` | `3dd76b0` | `feat(preflight)`: add budget and concurrency control |
+| `b10f8b4` | `1256b63` | `feat(preflight)`: add CLI, profiles and reporting |
+| `2dd3228` | `e30ba4d` | `feat(preflight)`: add check registry and exit-code semantics |
+| `c5666b4` | `c98f2dd` | `feat(preflight)`: add config loader, sanitizer, safe_url |
+| `51a2b1d` | `36ab78c` | `chore(preflight)`: bootstrap venv and wrapper |
+| `144fa5e` | `c3358d8` | `docs(backlog)`: add environment provisioning backlog with 22-check traceability |
+| `91c703d` | `9b2989c` | `docs(design)`: amend environment provisioning TDDoc after red-team review and topology correction |
+| `292473d` | `ad5eee2` | `chore(security)`: ignore local secret and key files |
+
+### 9.2 Remotes
+
+| Remote | URL |
+|---|---|
+| `origin` | `git@github.com:guang/QuantDinger.git` (fork) |
+| `upstream` | `https://github.com/OpenByteInc/QuantDinger.git` |
+
+`main` track `upstream/main`; `setup/environment-provisioning` chưa push.
+
+### 9.3 SSH key
+
+- `~/.ssh/id_ed25519_quantdinger` (ed25519, mode `600`) + entry `github.com` trong `~/.ssh/config`.
+- Fingerprint: `SHA256:ewLay3zvdXSdAkoj4PTaSXf3E22jYU+C5laSSkOwvCg`.
+- Trạng thái: **chưa thêm vào GitHub** → push đang blocked.
+
+### 9.4 Ollama ↔ Docker — phương án B2 relay
+
+- Ollama giữ nguyên `127.0.0.1:11434` (user unit `ollama.service`); `.env` không đổi.
+- Cơ chế relay: **(c) `systemd-socket-proxyd`**, user-space, không cần sudo.
+  - `~/.config/systemd/user/ollama-bridge.socket` — `ListenStream=172.17.0.1:11434`, `FreeBind=true`.
+  - `~/.config/systemd/user/ollama-bridge.service` — `ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:11434`, `Restart=always`.
+  - Bản sao versioned: `scripts/systemd/`.
+- Persistent:
+  - `systemctl --user is-enabled ollama-bridge.socket` → `enabled`.
+  - `loginctl show-user rew -p Linger` → `yes` (user manager chạy từ boot, không cần login).
+  - `FreeBind=true` xử lý boot-order; đã test bind thành công trên địa chỉ chưa tồn tại `172.31.255.254:11435`.
+- Bề mặt mạng:
+  - Chỉ `127.0.0.1:11434` và `172.17.0.1:11434` listen.
+  - `192.168.2.77:11434` → `ConnectionRefused`.
+  - Container trên default bridge và trên user-defined network (gateway `172.22.0.1`) đều gọi được `host.docker.internal:11434`.
+- Restart test: `systemctl --user restart ollama-bridge.socket` → listener + container path vẫn OK.
+- **Chưa chạy reboot thật** (sẽ ngắt phiên agent). Lệnh verify sau reboot:
+  `ss -ltn | grep 11434 && systemctl --user is-active ollama-bridge.socket && scripts/preflight --profile phase0`
+
+### 9.5 `docker-compose.override.yml`
+
+- File mới, **đã nằm trong `.gitignore`** (dòng 114) nên không commit; `docker-compose.yml` gốc không sửa.
+- Chỉ thêm `extra_hosts: ["host.docker.internal:host-gateway"]` cho 10 service:
+  `backend`, `mcp`, `trading-worker`, `kafka-audit-worker`,
+  `strategy-dispatcher-worker`, `strategy-evaluator-worker`, `scheduler-worker`,
+  `celery-worker`, `celery-backtest-worker`, `celery-beat`.
+- `docker compose config --quiet` → OK.
+- Chưa đổi `CUSTOM_API_URL`. Trong container, giá trị `http://127.0.0.1:11434/v1` từ `.env`
+  trỏ vào chính container → Phase 1 phải override thành `http://host.docker.internal:11434/v1`.
+
+### 9.6 Preflight sau thay đổi
+
+- `scripts/preflight --profile phase0` → exit `0`, 20 PASS / 1 WARN / 0 FAIL / 0 UNVERIFIED.
+- WARN duy nhất vẫn là false-positive `config_precedence` cho `DB_POOL_MAX`/`DB_POOL_MIN`.
+
+### 9.7 Còn mở
+
+- Push fork: chờ SSH key được thêm vào GitHub.
+- Disk cleanup: chờ duyệt từng mục (mục tiêu ≥35 GiB; hiện 27.46 GiB).

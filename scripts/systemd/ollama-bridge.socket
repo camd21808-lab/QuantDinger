@@ -1,0 +1,14 @@
+[Unit]
+Description=Ollama bridge socket for Docker containers (172.17.0.1:11434)
+Documentation=file:///home/rew/.config/systemd/user/ollama-bridge.service
+After=network.target
+
+[Socket]
+ListenStream=172.17.0.1:11434
+NoDelay=true
+# Allow binding before docker0 exists (boot ordering); the socket becomes
+# reachable as soon as 172.17.0.1 is assigned to docker0.
+FreeBind=true
+
+[Install]
+WantedBy=sockets.target
