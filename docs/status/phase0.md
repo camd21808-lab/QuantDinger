@@ -246,7 +246,9 @@ Các việc Phase 1 đã biết (chưa làm):
   - `192.168.2.77:11434` → `ConnectionRefused`.
   - Container trên default bridge và trên user-defined network (gateway `172.22.0.1`) đều gọi được `host.docker.internal:11434`.
 - Restart test: `systemctl --user restart ollama-bridge.socket` → listener + container path vẫn OK.
-- **Chưa chạy reboot thật** (sẽ ngắt phiên agent). Lệnh verify sau reboot:
+- **Known limitation:** reboot persistence đã verify bằng cấu hình (`enabled`, `Linger=yes`,
+  `FreeBind=true` probe, restart test) nhưng **chưa verify bằng reboot thật**. Sẽ verify ở lần
+  reboot tự nhiên tiếp theo; không block Phase 1. Lệnh verify sau reboot:
   `ss -ltn | grep 11434 && systemctl --user is-active ollama-bridge.socket && scripts/preflight --profile phase0`
 
 ### 9.5 `docker-compose.override.yml`
