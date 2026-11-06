@@ -219,16 +219,27 @@ Các việc Phase 1 đã biết (chưa làm):
 
 | Remote | URL |
 |---|---|
-| `origin` | `git@github.com:guang/QuantDinger.git` (fork) |
+| `origin` | `git@github.com:camd21808-lab/QuantDinger.git` (fork) |
 | `upstream` | `https://github.com/OpenByteInc/QuantDinger.git` |
 
-`main` track `upstream/main`; `setup/environment-provisioning` chưa push.
+> **Đính chính:** tài khoản GitHub thực tế là `camd21808-lab`, không phải `guang`.
+> Fork công khai: `camd21808-lab/QuantDinger` (fork của `OpenByteInc/QuantDinger`).
+
+Đã push (không force), remote khớp local:
+
+| Branch | Remote SHA | Local SHA |
+|---|---|---|
+| `main` | `dd90b83b0d2323efb3869049052dcdffeb2b6bde` | `dd90b83b0d2323efb3869049052dcdffeb2b6bde` |
+| `setup/environment-provisioning` | `01cb12cc3fa59994caa8f5fca6e544544eef8e6a` | `01cb12cc3fa59994caa8f5fca6e544544eef8e6a` |
+
+`main` giờ track `origin/main`; `setup/environment-provisioning` track `origin/setup/environment-provisioning`.
 
 ### 9.3 SSH key
 
 - `~/.ssh/id_ed25519_quantdinger` (ed25519, mode `600`) + entry `github.com` trong `~/.ssh/config`.
 - Fingerprint: `SHA256:ewLay3zvdXSdAkoj4PTaSXf3E22jYU+C5laSSkOwvCg`.
-- Trạng thái: **chưa thêm vào GitHub** → push đang blocked.
+- Trạng thái: đã thêm vào GitHub; `ssh -T git@github.com` trả `Hi camd21808-lab!`
+  → push thành công ngày 2026-11-06.
 
 ### 9.4 Ollama ↔ Docker — phương án B2 relay
 
@@ -267,7 +278,17 @@ Các việc Phase 1 đã biết (chưa làm):
 - `scripts/preflight --profile phase0` → exit `0`, 20 PASS / 1 WARN / 0 FAIL / 0 UNVERIFIED.
 - WARN duy nhất vẫn là false-positive `config_precedence` cho `DB_POOL_MAX`/`DB_POOL_MIN`.
 
-### 9.7 Còn mở
+### 9.7 Push và disk cleanup
 
-- Push fork: chờ SSH key được thêm vào GitHub.
-- Disk cleanup: chờ duyệt từng mục (mục tiêu ≥35 GiB; hiện 27.46 GiB).
+- Push fork: **hoàn tất** 2026-11-06, không force; remote refs khớp local (§9.2).
+- Disk cleanup đã thực hiện:
+  - **D1** `docker builder prune -af` → 1.862 GB.
+  - **D2** dừng + xóa 8 container và 8 image memeforge; **giữ nguyên** 3 volume
+    `memeforge_pgdata`, `memeforge_redisdata`, `memeforge_caddydata`.
+    `docker-compose.yml` của memeforge đã không còn nên dùng `docker stop/rm/rmi`
+    thay cho `compose down`. Container layer chỉ 4–967 kB nên không mất dữ liệu.
+  - **N1** xóa cache `~/.cache/{hyperframes,qoder-updater,torbrowser,node-gyp,tracker3,pip,huggingface}`.
+- **N3+N4 chưa chạy:** `sudo` yêu cầu mật khẩu, không chạy phi tương tác được.
+- Dung lượng: **33.93 GiB** free (mục tiêu ≥35 GiB) → còn thiếu ~1.07 GiB.
+  Cần owner chạy `sudo journalctl --vacuum-size=100M && sudo apt clean` (~0.54 GiB)
+  và duyệt thêm ~0.6 GiB (ví dụ `~/.npm` + `~/.local/share/uv`) hoặc N5.
