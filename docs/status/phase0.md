@@ -281,6 +281,11 @@ Các việc Phase 1 đã biết (chưa làm):
 ### 9.7 Push và disk cleanup
 
 - Push fork: **hoàn tất** 2026-11-06, không force; remote refs khớp local (§9.2).
+- Secret scan (2026-11-08): **PASS**.
+  - 0 hit trên toàn bộ dòng thêm của `upstream/main..HEAD` (23 commit).
+  - Tree hiện tại: 2 hit `AKIA…` trong `docs/deployment/NOTIFICATION_EMAIL_CONFIG_{EN,CN}.md`
+    đều là placeholder chuẩn AWS `AKIAIOSFODNN7EXAMPLE`, không phải key thật.
+  - `.env` không được track; không có private key block trong tree.
 - Disk cleanup đã thực hiện:
   - **D1** `docker builder prune -af` → 1.862 GB.
   - **D2** dừng + xóa 8 container và 8 image memeforge; **giữ nguyên** 3 volume
@@ -288,7 +293,21 @@ Các việc Phase 1 đã biết (chưa làm):
     `docker-compose.yml` của memeforge đã không còn nên dùng `docker stop/rm/rmi`
     thay cho `compose down`. Container layer chỉ 4–967 kB nên không mất dữ liệu.
   - **N1** xóa cache `~/.cache/{hyperframes,qoder-updater,torbrowser,node-gyp,tracker3,pip,huggingface}`.
+  - **X1** `~/.npm` (394 MB) và **X2** `~/.local/share/uv` (627 MB).
+- **Sự cố X2:** `~/.local/share/uv` chứa CPython 3.12 do uv quản lý, không chỉ cache;
+  `scripts/.venv` trỏ tới interpreter đó nên preflight tạm thời exit 2.
+  Đã khôi phục bằng `uv python install 3.12`; `scripts/.venv/bin/python -V` → 3.12.15,
+  test suite `241 passed, 3 skipped`, preflight về `exit 0`.
 - **N3+N4 chưa chạy:** `sudo` yêu cầu mật khẩu, không chạy phi tương tác được.
-- Dung lượng: **33.93 GiB** free (mục tiêu ≥35 GiB) → còn thiếu ~1.07 GiB.
-  Cần owner chạy `sudo journalctl --vacuum-size=100M && sudo apt clean` (~0.54 GiB)
-  và duyệt thêm ~0.6 GiB (ví dụ `~/.npm` + `~/.local/share/uv`) hoặc N5.
+- Dung lượng: **29.97 GiB** free. Thấp hơn 33.93 GiB ghi nhận ngày 2026-11-06 vì hệ thống
+  tăng ~4.7 GiB trong hai ngày (snap/`/var/lib/snapd`, log, package refresh), không phải
+  do thao tác xóa. Mục tiêu ≥35 GiB **không đạt**; owner chấp nhận ngưỡng thực tế
+  (preflight yêu cầu ≥20 GiB và vẫn PASS).
+
+### 9.8 Known limitation — relay persistence
+
+- Cơ chế: `systemd-socket-proxyd` với `FreeBind=true`.
+- Verify: `enabled` + `Linger=yes` + restart test → OK.
+- Chưa verify: reboot thật (sẽ verify ở lần reboot tự nhiên tiếp theo).
+- Nếu sau reboot relay fail: chạy `systemctl --user restart ollama-bridge.socket`
+  và báo opencode fix.
