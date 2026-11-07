@@ -298,8 +298,9 @@ Các việc Phase 1 đã biết (chưa làm):
   `scripts/.venv` trỏ tới interpreter đó nên preflight tạm thời exit 2.
   Đã khôi phục bằng `uv python install 3.12`; `scripts/.venv/bin/python -V` → 3.12.15,
   test suite `241 passed, 3 skipped`, preflight về `exit 0`.
-- **N3+N4 chưa chạy:** `sudo` yêu cầu mật khẩu, không chạy phi tương tác được.
-- Dung lượng: **29.97 GiB** free. Thấp hơn 33.93 GiB ghi nhận ngày 2026-11-06 vì hệ thống
+- **S1** (owner, 2026-11-08): `journalctl --vacuum-size=100M` giải phóng 513 MB; `apt clean` xong.
+- **N3+N4 hoàn tất** qua S1.
+- Dung lượng cuối: **30.40 GiB** free. Thấp hơn 33.93 GiB ghi nhận ngày 2026-11-06 vì hệ thống
   tăng ~4.7 GiB trong hai ngày (snap/`/var/lib/snapd`, log, package refresh), không phải
   do thao tác xóa. Mục tiêu ≥35 GiB **không đạt**; owner chấp nhận ngưỡng thực tế
   (preflight yêu cầu ≥20 GiB và vẫn PASS).
